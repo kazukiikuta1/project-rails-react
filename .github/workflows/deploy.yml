@@ -21,19 +21,18 @@ jobs:
       - name: Test SSH connection
         run: |
           echo "Testing SSH connection..."
-          ssh -vvv -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo SSH connection successful"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@${{ secrets.EC2_HOST }} "echo SSH connection successful"
 
       - name: Deploy to EC2
         run: |
           echo "Deploying application..."
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            set -e  # エラーで停止
-            echo "Changing to project directory..."
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+            echo "Navigating to project directory..."
             cd /path/to/your/project
-            echo "Pulling latest changes from Git..."
+            echo "Pulling latest changes..."
             git pull origin main
-            echo "Stopping current containers..."
+            echo "Restarting Docker containers..."
             docker-compose down
-            echo "Building and starting containers..."
             docker-compose up -d --build
           EOF
