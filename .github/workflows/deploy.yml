@@ -24,15 +24,33 @@ jobs:
           echo "  IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
 
-      - name: Test SSH connection
-        run: |
-          ssh ec2-instance "echo SSH connection successful"
-
-      - name: Deploy to EC2
+      - name: Install Git and Docker
         run: |
           ssh ec2-instance << 'EOF'
-            cd /path/to/your/project
-            git pull origin main
+            sudo yum install -y git
+            sudo yum install -y docker
+            sudo service docker start
+            sudo usermod -a -G docker ec2-user
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+          EOF
+
+      - name: Clone or Pull Repository
+        run: |
+          ssh ec2-instance << 'EOF'
+            set -e
+            if [ ! -d /home/ec2-user/project-rails-react ]; then
+              git clone https://github.com/kazukiikuta1/project-rails-react.git /home/ec2-user/project-rails-react
+            else
+              cd /home/ec2-user/project-rails-react
+              git pull origin main
+            fi
+          EOF
+
+      - name: Deploy with Docker
+        run: |
+          ssh ec2-instance << 'EOF'
+            cd /home/ec2-user/project-rails-react
             docker-compose down
             docker-compose up -d --build
           EOF
